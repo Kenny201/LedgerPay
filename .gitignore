@@ -1,0 +1,44 @@
+# Бинарники
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+bin/
+dist/
+build/
+
+# Покрытие тестами
+coverage.*
+
+# Секреты / окружение
+.env
+.env.local
+.env.*.local
+
+# Личные заметки (не часть публичного проекта)
+docs/TZ.md
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Go
+# vendor/ коммитим специально: сборка Docker не зависит от proxy.golang.org
+*.prof
+*.pprof
+
+# Go workspace (локально; в git только go.work.example)
+go.work
+go.work.sum
+
+# Сгенерированные proto (раскомментируйте, если не хотите коммитить stubs)
+# **/*.pb.go
+
+# Временные файлы
+tmp/
+temp/
