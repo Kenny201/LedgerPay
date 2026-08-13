@@ -2,17 +2,13 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
+	"github.com/Kenny201/LedgerPay/gateway/internal/app"
 	"github.com/Kenny201/LedgerPay/gateway/internal/config"
-
-	"golang.org/x/sync/errgroup"
 )
 
 func main() {
@@ -21,42 +17,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok"))
-	})
-	mux.HandleFunc("/readyz", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ready"))
-	})
-
-	httpAddr := fmt.Sprintf(":%d", cfg.HTTPPort)
-	srv := &http.Server{
-		Addr:              httpAddr,
-		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-
-	g, ctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		fmt.Printf("%s: HTTP слушает %s\n", cfg.ServiceName, httpAddr)
-		fmt.Printf("%s: upstream auth=%s account=%s transaction=%s notifications=%s\n",
-			cfg.ServiceName, cfg.AuthGRPCAddr, cfg.AccountGRPCAddr, cfg.TransactionGRPCAddr, cfg.NotificationsGRPCAddr)
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			return err
-		}
-		return nil
-	})
-	g.Go(func() error {
-		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		fmt.Printf("%s: завершение работы\n", cfg.ServiceName)
-		return srv.Shutdown(shutdownCtx)
-	})
-
-	if err := g.Wait(); err != nil {
+	if err := app.New(cfg).Run(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "%s: %v\n", cfg.ServiceName, err)
 		os.Exit(1)
 	}
